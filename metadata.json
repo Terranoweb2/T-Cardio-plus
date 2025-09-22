@@ -1,0 +1,8 @@
+{
+  "name": "Copy of T-Cardio",
+  "description": "T-Cardio est une application web pour suivre quotidiennement votre tension artérielle, recevoir une interprétation générée par l'IA de vos mesures, et visualiser votre historique.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
