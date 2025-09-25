@@ -7,12 +7,16 @@ export interface BloodPressureReading {
   pulse: number;
   timestamp: number; // Stored as Date.now()
   interpretation: Interpretation;
+  // Nouveaux champs pour le suivi de lecture par le médecin
+  sharedWithDoctor?: boolean; // Indique si la mesure a été partagée automatiquement
+  doctorReadAt?: number; // Timestamp de lecture par le médecin
+  doctorId?: string; // ID du médecin qui a lu la mesure
 }
 
 export interface Interpretation {
   classification: string;
   summary: string;
-  riskLevel: 'low' | 'normal' | 'elevated' | 'warning' | 'danger';
+  riskLevel: 'low' | 'normal' | 'elevated' | 'warning' | 'danger' | 'critical';
 }
 
 export interface HealthTips {

@@ -8,6 +8,7 @@ import { getMessagesForConversation, sendMessage, sendFileMessage } from '../ser
 import { getRemindersForPatient, updateReminderStatus } from '../services/reminderService';
 import { checkAndTriggerNotification } from '../services/notificationService';
 import { getReadingsForUser, addReading } from '../services/bloodPressureService';
+import PatientMeasurementsWithStatus from './PatientMeasurementsWithStatus';
 
 import BloodPressureForm from './BloodPressureForm';
 import InterpretationDisplay from './InterpretationDisplay';
@@ -283,7 +284,7 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({
           isDataLoading ? <div className="text-center"><SpinnerIcon className="h-8 w-8 animate-spin text-red-500"/></div> :
           <div className="space-y-8">
             <section className="bg-white p-6 rounded-2xl shadow-lg"><h2 className="text-xl font-semibold mb-4 text-slate-700">Tendance de la Tension</h2><HistoryChart readings={readings} /></section>
-            <section className="bg-white p-6 rounded-2xl shadow-lg"><h2 className="text-xl font-semibold mb-4 text-slate-700">Historique des Mesures</h2><HistoryTable readings={readings} /></section>
+            <PatientMeasurementsWithStatus patient={profile} />
           </div>
         )}
         

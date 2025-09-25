@@ -1,0 +1,45 @@
+VARIABLES D'ENVIRONNEMENT RAILWAY - COPIER-COLLER
+=================================================
+
+Dans Railway, onglet "Variables", ajouter ces 6 variables :
+
+1. NODE_ENV
+   Valeur : production
+
+2. JWT_SECRET
+   Valeur : tcardio-railway-production-2025-secure-key
+
+3. CORS_ORIGIN
+   Valeur : *
+
+4. DB_PATH
+   Valeur : ./database/t-cardio.db
+
+5. BCRYPT_ROUNDS
+   Valeur : 12
+
+6. LOG_LEVEL
+   Valeur : info
+
+=================================================
+
+INSTRUCTIONS :
+1. Cliquer sur "Add Variable" pour chaque variable
+2. Nom = le nom de la variable (ex: NODE_ENV)
+3. Valeur = la valeur correspondante (ex: production)
+4. Répéter pour les 6 variables
+5. Cliquer "Deploy" quand terminé
+
+=================================================
+
+COMPTES DE TEST APRÈS DÉPLOIEMENT :
+
+Médecin :
+Email : medecin@app.com
+Password : password
+
+Patient :
+Email : patient@app.com  
+Password : password
+
+=================================================

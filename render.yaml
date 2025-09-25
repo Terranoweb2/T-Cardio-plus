@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: t-cardio-app
+    env: node
+    plan: free
+    buildCommand: npm run build:full
+    startCommand: npm run start:production
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: DB_PATH
+        value: ./database/t-cardio.db
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        value: "*"
+    disk:
+      name: t-cardio-data
+      mountPath: /app/server/database
+      sizeGB: 1

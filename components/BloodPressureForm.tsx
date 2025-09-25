@@ -98,7 +98,7 @@ const BloodPressureForm: React.FC<BloodPressureFormProps> = ({ onSubmit, isLoadi
                 Analyse en cours...
             </>
         ) : (
-          'Obtenir l\\'interprétation'
+          "Obtenir l'interprétation"
         )}
       </button>
     </form>

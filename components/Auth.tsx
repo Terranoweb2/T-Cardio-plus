@@ -110,6 +110,8 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
           {isLoginView ? "S'inscrire" : 'Se connecter'}
         </button>
       </p>
+
+
     </div>
   );
 };

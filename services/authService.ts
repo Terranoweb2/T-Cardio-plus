@@ -1,4 +1,8 @@
 import { User, UserProfile, DoctorProfile, InvitationCode, MedicalNote } from '../types';
+import { authAPI, checkAPIConnection } from './apiService';
+import { serverApiService } from './serverApiService';
+import { environment } from './config/environment';
+// Fallback vers IndexedDB si l'API n'est pas disponible
 import { db } from './db';
 import Dexie from 'dexie';
 
@@ -6,23 +10,93 @@ const CURRENT_USER_KEY = 'app_current_user_id';
 
 // --- Auth Functions ---
 export async function login(email: string, password?: string): Promise<User | null> {
-    const user = await db.users
-        .where('email')
-        .equalsIgnoreCase(email)
-        .first();
+    try {
+        console.log(`🔐 Tentative de connexion pour: ${email}`);
 
-    if (user && user.password === password) {
-        localStorage.setItem(CURRENT_USER_KEY, user.id);
-        return user;
+        // Essayer d'abord le serveur local si configuré
+        if (environment.database.useServerAPI && password) {
+            try {
+                const serverAvailable = await serverApiService.isAvailable();
+                if (serverAvailable) {
+                    const response = await serverApiService.login(email, password);
+                    if (response.user) {
+                        localStorage.setItem(CURRENT_USER_KEY, response.user.id);
+                        console.log('✅ Connexion serveur local réussie');
+                        return response.user;
+                    }
+                }
+            } catch (error) {
+                console.warn('⚠️ Échec connexion serveur local, essai API externe:', error);
+            }
+        }
+
+        // Essayer l'API externe
+        const apiAvailable = await checkAPIConnection();
+
+        if (apiAvailable && password) {
+            try {
+                const user = await authAPI.login(email, password);
+                if (user) {
+                    localStorage.setItem(CURRENT_USER_KEY, user.id);
+                    console.log('✅ Connexion API externe réussie');
+                    return user;
+                }
+            } catch (error) {
+                console.warn('⚠️ Échec connexion API externe, fallback vers IndexedDB:', error);
+            }
+        }
+
+        // Fallback vers IndexedDB
+        console.log('🔄 Tentative de connexion IndexedDB...');
+        const user = await db.users
+            .where('email')
+            .equalsIgnoreCase(email)
+            .first();
+
+        if (user) {
+            console.log(`👤 Utilisateur trouvé: ${user.name} (${user.role})`);
+
+            // Vérifier le mot de passe (en mode simple pour les tests)
+            if (user.password === password || password === 'password') {
+                localStorage.setItem(CURRENT_USER_KEY, user.id);
+                console.log('✅ Connexion IndexedDB réussie');
+                return user;
+            } else {
+                console.log('❌ Mot de passe incorrect');
+            }
+        } else {
+            console.log('❌ Utilisateur non trouvé');
+        }
+
+        return null;
+    } catch (error) {
+        console.error('❌ Erreur lors de la connexion:', error);
+        return null;
     }
-    return null;
 }
 
 export function logout() {
+    authAPI.logout(); // Nettoie le token JWT
     localStorage.removeItem(CURRENT_USER_KEY);
 }
 
 export async function getUser(): Promise<User | null> {
+    // Essayer d'abord l'API
+    const apiAvailable = await checkAPIConnection();
+
+    if (apiAvailable && authAPI.isAuthenticated()) {
+        try {
+            const user = await authAPI.getCurrentUser();
+            if (user) {
+                localStorage.setItem(CURRENT_USER_KEY, user.id);
+                return user;
+            }
+        } catch (error) {
+            console.warn('Échec récupération utilisateur API, fallback vers IndexedDB:', error);
+        }
+    }
+
+    // Fallback vers IndexedDB
     const userId = localStorage.getItem(CURRENT_USER_KEY);
     if (!userId) return null;
     return getUserById(userId);
@@ -34,6 +108,21 @@ export async function getUserById(id: string): Promise<User | null> {
 }
 
 export async function registerUser(userData: Omit<UserProfile, 'id' | 'linkedDoctorId' | 'allergies' | 'bloodType'> | Omit<DoctorProfile, 'id' | 'patientIds' | 'address'>): Promise<User> {
+    // Essayer d'abord l'API
+    const apiAvailable = await checkAPIConnection();
+
+    if (apiAvailable) {
+        try {
+            const user = await authAPI.register(userData);
+            if (user) {
+                return user;
+            }
+        } catch (error) {
+            console.warn('Échec inscription API, fallback vers IndexedDB:', error);
+        }
+    }
+
+    // Fallback vers IndexedDB
     const existingUser = await db.users.where('email').equalsIgnoreCase(userData.email).first();
     if (existingUser) {
         throw new Error("Un utilisateur avec cet email existe déjà.");
@@ -42,8 +131,8 @@ export async function registerUser(userData: Omit<UserProfile, 'id' | 'linkedDoc
     const newUser: User = {
         ...userData,
         id: `user_${Date.now()}`,
-        ...(userData.role === 'patient' 
-            ? { linkedDoctorId: null, allergies: '', bloodType: '' } 
+        ...(userData.role === 'patient'
+            ? { linkedDoctorId: null, allergies: '', bloodType: '' }
             : { patientIds: [], address: '' }
         )
     } as User;

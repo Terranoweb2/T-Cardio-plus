@@ -6,7 +6,9 @@ import PatientDashboard from './components/PatientDashboard';
 import DoctorDashboard from './components/DoctorDashboard';
 import VideoCall from './components/VideoCall';
 import Auth from './components/Auth';
-import { getUser, logout, getUserById } from './services/authService';
+import { getUser, logout, getUserById, updateUser } from './services/authService';
+import { getInitializationPromise, showDatabaseStatus } from './services/dataInitService';
+import { initializeDebugMode } from './services/debugModeService';
 import { requestNotificationPermission } from './services/notificationService';
 import { SpinnerIcon } from './components/icons/SpinnerIcon';
 
@@ -19,13 +21,34 @@ function App() {
   useEffect(() => {
     requestNotificationPermission();
 
-    const fetchUser = async () => {
+    const initializeApp = async () => {
       setIsLoadingUser(true);
-      const user = await getUser();
-      setCurrentUser(user);
-      setIsLoadingUser(false);
+
+      try {
+        // Initialiser le mode debug si nécessaire
+        initializeDebugMode();
+
+        // Initialiser les données de test si nécessaire
+        console.log('🚀 Initialisation de T-Cardio...');
+        await getInitializationPromise();
+
+        // Afficher le statut de la base de données (seulement en mode debug)
+        if (process.env.NODE_ENV === 'development') {
+          await showDatabaseStatus();
+        }
+
+        // Récupérer l'utilisateur actuel
+        const user = await getUser();
+        setCurrentUser(user);
+
+        console.log('✅ T-Cardio initialisé avec succès');
+      } catch (error) {
+        console.error('❌ Erreur lors de l\'initialisation:', error);
+      } finally {
+        setIsLoadingUser(false);
+      }
     };
-    fetchUser();
+    initializeApp();
   }, []);
 
   const handleLogin = (user: User) => {
@@ -117,7 +140,23 @@ function App() {
     }
     return activeCall?.patientProfile.name || 'Patient';
   };
-  
+
+  const handleUpdateProfile = async (updatedProfile: DoctorProfile) => {
+    try {
+      // Sauvegarder dans la base de données
+      const savedProfile = await updateUser(updatedProfile.id, updatedProfile);
+      if (savedProfile) {
+        setCurrentUser(savedProfile);
+        alert('Profil mis à jour avec succès !');
+      } else {
+        alert('Erreur lors de la mise à jour du profil');
+      }
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour:', error);
+      alert('Erreur lors de la mise à jour du profil');
+    }
+  };
+
   // State for async caller name
   const [callerName, setCallerName] = useState('');
   useEffect(() => {
@@ -158,6 +197,7 @@ function App() {
                 activeCall={activeCall}
                 onAcceptCall={handleAcceptCall}
                 onDeclineCall={handleDeclineCall}
+                onUpdateProfile={handleUpdateProfile}
               />
             )}
         </>

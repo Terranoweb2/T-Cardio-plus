@@ -10,6 +10,8 @@ import { checkAndTriggerNotification } from '../services/notificationService';
 import { MagnifyingGlassIcon } from './icons/MagnifyingGlassIcon';
 import { XCircleIcon } from './icons/XCircleIcon';
 import ChatInterface from './ChatInterface';
+import DoctorProfileEditor from './DoctorProfileEditor';
+import DoctorMeasurementsTable from './DoctorMeasurementsTable';
 
 interface DoctorDashboardProps {
   doctorProfile: DoctorProfile;
@@ -18,6 +20,7 @@ interface DoctorDashboardProps {
   activeCall: CallRequest | null;
   onAcceptCall: () => void;
   onDeclineCall: () => void;
+  onUpdateProfile: (profile: DoctorProfile) => void;
 }
 
 type DisplayMessage = Message & {
@@ -34,7 +37,9 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
   activeCall,
   onAcceptCall,
   onDeclineCall,
+  onUpdateProfile,
 }) => {
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'measurements' | 'profile'>('dashboard');
   const [patients, setPatients] = useState<UserProfile[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<UserProfile | null>(null);
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
@@ -223,7 +228,44 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
             <button onClick={onLogout} className="px-4 py-2 text-sm font-semibold text-white bg-slate-600 rounded-md hover:bg-slate-700">Déconnexion</button>
         </div>
 
-        <section className="bg-white p-6 rounded-2xl shadow-lg min-h-[200px] flex flex-col justify-center items-center">
+        {/* Navigation par onglets */}
+        <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+            <button
+                onClick={() => setActiveTab('dashboard')}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                    activeTab === 'dashboard'
+                        ? 'bg-white text-red-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                }`}
+            >
+                📊 Dashboard
+            </button>
+            <button
+                onClick={() => setActiveTab('measurements')}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                    activeTab === 'measurements'
+                        ? 'bg-white text-red-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                }`}
+            >
+                🩺 Mesures Patients
+            </button>
+            <button
+                onClick={() => setActiveTab('profile')}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                    activeTab === 'profile'
+                        ? 'bg-white text-red-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                }`}
+            >
+                👤 Mon Profil
+            </button>
+        </div>
+
+        {/* Contenu conditionnel selon l'onglet actif */}
+        {activeTab === 'dashboard' && (
+            <>
+                <section className="bg-white p-6 rounded-2xl shadow-lg min-h-[200px] flex flex-col justify-center items-center">
             <h3 className="text-xl font-semibold mb-4 text-slate-700 w-full text-left">Gestion des appels</h3>
              {callState === 'incoming' && activeCall ? (
                 <IncomingCall />
@@ -395,6 +437,21 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                 </div>
             )}
         </section>
+            </>
+        )}
+
+        {/* Onglet Mesures */}
+        {activeTab === 'measurements' && (
+            <DoctorMeasurementsTable doctor={doctorProfile} />
+        )}
+
+        {/* Onglet Profil */}
+        {activeTab === 'profile' && (
+            <DoctorProfileEditor
+                profile={doctorProfile}
+                onSave={onUpdateProfile}
+            />
+        )}
     </div>
   );
 };

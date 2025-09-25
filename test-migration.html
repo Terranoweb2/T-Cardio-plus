@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Migration T-Cardio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-center mb-8">🗄️ Test Migration Base de Données T-Cardio</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Test API -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold mb-4">🌐 Test API (Base Locale)</h2>
+                <div id="api-status" class="mb-4">
+                    <span class="text-gray-500">En cours de test...</span>
+                </div>
+                <button onclick="testAPI()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                    Tester API
+                </button>
+                <div id="api-results" class="mt-4 text-sm"></div>
+            </div>
+
+            <!-- Test IndexedDB -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold mb-4">💾 Test IndexedDB (Navigateur)</h2>
+                <div id="indexeddb-status" class="mb-4">
+                    <span class="text-gray-500">En cours de test...</span>
+                </div>
+                <button onclick="testIndexedDB()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                    Tester IndexedDB
+                </button>
+                <div id="indexeddb-results" class="mt-4 text-sm"></div>
+            </div>
+        </div>
+
+        <!-- Résultats de comparaison -->
+        <div class="bg-white p-6 rounded-lg shadow-md mt-6">
+            <h2 class="text-xl font-semibold mb-4">📊 Comparaison des Performances</h2>
+            <div id="comparison-results" class="text-sm">
+                <p class="text-gray-500">Lancez les tests pour voir la comparaison...</p>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="bg-blue-50 p-6 rounded-lg mt-6">
+            <h3 class="text-lg font-semibold mb-2">📋 Instructions</h3>
+            <ul class="list-disc list-inside space-y-2 text-sm">
+                <li><strong>API (Base Locale)</strong> : Utilise SQLite via serveur Express.js sur port 3001</li>
+                <li><strong>IndexedDB (Navigateur)</strong> : Utilise la base de données intégrée du navigateur</li>
+                <li>L'application utilise l'API en priorité avec fallback vers IndexedDB</li>
+                <li>Comptes de test : medecin@app.com / password et patient@app.com / password</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:3001/api';
+        
+        async function testAPI() {
+            const statusEl = document.getElementById('api-status');
+            const resultsEl = document.getElementById('api-results');
+            
+            statusEl.innerHTML = '<span class="text-yellow-500">⏳ Test en cours...</span>';
+            resultsEl.innerHTML = '';
+            
+            try {
+                const startTime = performance.now();
+                
+                // Test de santé
+                const healthResponse = await fetch(`${API_BASE_URL}/health`);
+                const healthData = await healthResponse.json();
+                
+                // Test de connexion
+                const loginResponse = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: 'patient@app.com', password: 'password' })
+                });
+                const loginData = await loginResponse.json();
+                
+                const endTime = performance.now();
+                const duration = Math.round(endTime - startTime);
+                
+                statusEl.innerHTML = '<span class="text-green-500">✅ API Opérationnelle</span>';
+                resultsEl.innerHTML = `
+                    <div class="bg-green-50 p-3 rounded">
+                        <p><strong>Santé API:</strong> ${healthData.status}</p>
+                        <p><strong>Connexion:</strong> ${loginData.user ? 'Réussie' : 'Échouée'}</p>
+                        <p><strong>Utilisateur:</strong> ${loginData.user?.name || 'N/A'}</p>
+                        <p><strong>Temps de réponse:</strong> ${duration}ms</p>
+                    </div>
+                `;
+                
+                window.apiPerformance = duration;
+                updateComparison();
+                
+            } catch (error) {
+                statusEl.innerHTML = '<span class="text-red-500">❌ API Indisponible</span>';
+                resultsEl.innerHTML = `
+                    <div class="bg-red-50 p-3 rounded">
+                        <p><strong>Erreur:</strong> ${error.message}</p>
+                        <p class="text-sm text-gray-600">Vérifiez que le serveur backend est démarré sur le port 3001</p>
+                    </div>
+                `;
+            }
+        }
+        
+        async function testIndexedDB() {
+            const statusEl = document.getElementById('indexeddb-status');
+            const resultsEl = document.getElementById('indexeddb-results');
+            
+            statusEl.innerHTML = '<span class="text-yellow-500">⏳ Test en cours...</span>';
+            resultsEl.innerHTML = '';
+            
+            try {
+                const startTime = performance.now();
+                
+                // Test d'ouverture IndexedDB
+                const dbRequest = indexedDB.open('TestDB', 1);
+                
+                await new Promise((resolve, reject) => {
+                    dbRequest.onsuccess = () => resolve(dbRequest.result);
+                    dbRequest.onerror = () => reject(dbRequest.error);
+                    dbRequest.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+                        if (!db.objectStoreNames.contains('testStore')) {
+                            db.createObjectStore('testStore', { keyPath: 'id' });
+                        }
+                    };
+                });
+                
+                const endTime = performance.now();
+                const duration = Math.round(endTime - startTime);
+                
+                statusEl.innerHTML = '<span class="text-green-500">✅ IndexedDB Opérationnel</span>';
+                resultsEl.innerHTML = `
+                    <div class="bg-green-50 p-3 rounded">
+                        <p><strong>Base de données:</strong> Créée avec succès</p>
+                        <p><strong>Support navigateur:</strong> Complet</p>
+                        <p><strong>Temps d'ouverture:</strong> ${duration}ms</p>
+                        <p><strong>Stockage:</strong> Local (navigateur)</p>
+                    </div>
+                `;
+                
+                window.indexedDBPerformance = duration;
+                updateComparison();
+                
+            } catch (error) {
+                statusEl.innerHTML = '<span class="text-red-500">❌ IndexedDB Indisponible</span>';
+                resultsEl.innerHTML = `
+                    <div class="bg-red-50 p-3 rounded">
+                        <p><strong>Erreur:</strong> ${error.message}</p>
+                        <p class="text-sm text-gray-600">Votre navigateur ne supporte pas IndexedDB</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function updateComparison() {
+            const comparisonEl = document.getElementById('comparison-results');
+            
+            if (window.apiPerformance && window.indexedDBPerformance) {
+                const faster = window.apiPerformance < window.indexedDBPerformance ? 'API' : 'IndexedDB';
+                const difference = Math.abs(window.apiPerformance - window.indexedDBPerformance);
+                
+                comparisonEl.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-blue-50 p-4 rounded">
+                            <h4 class="font-semibold">🌐 API (Base Locale)</h4>
+                            <p>Temps: ${window.apiPerformance}ms</p>
+                            <p>Avantages: Données persistantes, partagées, sécurisées</p>
+                            <p>Inconvénients: Nécessite serveur, réseau</p>
+                        </div>
+                        <div class="bg-green-50 p-4 rounded">
+                            <h4 class="font-semibold">💾 IndexedDB (Navigateur)</h4>
+                            <p>Temps: ${window.indexedDBPerformance}ms</p>
+                            <p>Avantages: Rapide, offline, pas de serveur</p>
+                            <p>Inconvénients: Local uniquement, limité</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 p-4 bg-yellow-50 rounded">
+                        <p><strong>🏆 Plus rapide:</strong> ${faster} (différence: ${difference}ms)</p>
+                        <p><strong>💡 Recommandation:</strong> L'application T-Cardio utilise l'API en priorité avec fallback automatique vers IndexedDB</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // Tests automatiques au chargement
+        window.addEventListener('load', () => {
+            setTimeout(testAPI, 500);
+            setTimeout(testIndexedDB, 1000);
+        });
+    </script>
+</body>
+</html>
