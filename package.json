@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm install --legacy-peer-deps && vite build && cd server && npm install --legacy-peer-deps && npm run init-db",
+    "build": "chmod +x build.sh && ./build.sh",
+    "build:frontend": "vite build",
     "build:full": "npm install --legacy-peer-deps && cd server && npm install --legacy-peer-deps && cd .. && npm run build && cd server && npm run init-db",
     "start:production": "cd server && npm start",
     "preview": "vite preview",
@@ -16,10 +17,10 @@
     "deploy:render": "npm run build:full"
   },
   "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
     "@google/genai": "^1.20.0",
-    "recharts": "^2.12.7",
+    "recharts": "2.8.0",
     "dexie": "^4.0.8",
     "clsx": "^2.1.1",
     "tailwind-merge": "^2.4.0",
