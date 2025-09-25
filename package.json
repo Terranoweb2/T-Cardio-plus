@@ -5,12 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "npm install --legacy-peer-deps && vite build && cd server && npm install --legacy-peer-deps && npm run init-db",
     "build:full": "npm install --legacy-peer-deps && cd server && npm install --legacy-peer-deps && cd .. && npm run build && cd server && npm run init-db",
     "start:production": "cd server && npm start",
     "preview": "vite preview",
     "build:netlify": "npm run build",
-    "start": "vite preview --port 4173",
+    "start": "node server/server-production.js",
     "deploy:netlify": "node deploy-netlify.cjs",
     "deploy:railway": "railway up",
     "deploy:render": "npm run build:full"
